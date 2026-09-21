@@ -1,0 +1,5 @@
+_shots/
+*.b64
+*.log
+.DS_Store
+Thumbs.db
