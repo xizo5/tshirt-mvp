@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T恤 3D 定制预览</title>
+<style>
+  :root{ --bg:#f3f0ea; --panel:#fff; --ink:#1c1c1c; --mut:#8a857c; --line:#e4e0d8; --acc:#c0392b; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--ink); }
+  header{ padding:18px 24px; border-bottom:1px solid var(--line); display:flex; align-items:baseline; gap:12px; }
+  header h1{ font-size:18px; margin:0; }
+  header span{ font-size:12px; color:var(--mut); }
+  .layout{ display:flex; gap:20px; padding:20px; max-width:1400px; margin:0 auto; }
+  .panel{ width:320px; flex:0 0 320px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  .stage{ flex:1; background:var(--panel); border:1px solid var(--line); border-radius:10px; position:relative; min-height:720px; overflow:hidden; }
+  #view{ width:100%; height:100%; display:block; }
+  .sec{ margin-bottom:18px; }
+  .sec-title{ font-size:12px; font-weight:700; letter-spacing:.08em; color:var(--mut); border-bottom:1px solid var(--line); padding-bottom:6px; margin-bottom:10px; }
+  .tabs{ display:flex; gap:8px; }
+  .tabs button{ flex:1; padding:8px; border:1px solid var(--line); background:#faf8f4; border-radius:6px; cursor:pointer; font-size:13px; }
+  .tabs button.on{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:12px; color:var(--mut); margin-bottom:4px; }
+  .field input[type=text], .field select{ width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; font-size:13px; }
+  .range{ display:flex; align-items:center; gap:8px; }
+  .range input{ flex:1; }
+  .range output{ font-size:12px; width:34px; text-align:right; font-variant-numeric:tabular-nums; }
+  .hint{ font-size:11px; color:var(--mut); line-height:1.6; }
+  .row{ display:flex; gap:8px; }
+  .btn{ flex:1; padding:10px; border-radius:6px; border:1px solid var(--line); background:#faf8f4; cursor:pointer; font-size:13px; }
+  .btn.primary{ background:var(--acc); color:#fff; border-color:var(--acc); }
+  .colorpick{ width:100%; height:36px; border:1px solid var(--line); border-radius:6px; padding:2px; }
+  .tip{ position:absolute; left:12px; bottom:10px; font-size:11px; color:var(--mut); background:rgba(255,255,255,.7); padding:4px 8px; border-radius:4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>T恤 3D 定制预览</h1>
+  <span>真实 3D 人台 · 拖拽旋转 / 滚轮缩放 · 印花随布料</span>
+</header>
+<div class="layout">
+  <div class="panel">
+    <div class="sec">
+      <div class="sec-title">1 · 印花内容</div>
+      <div class="tabs">
+        <button id="tabText" class="on" type="button">文字</button>
+        <button id="tabImg" type="button">图片</button>
+      </div>
+      <div id="fieldText" class="field" style="margin-top:10px">
+        <label>文字内容</label>
+        <input type="text" id="textInput" value="DEMO" maxlength="30">
+      </div>
+      <div id="fieldImg" class="field" style="margin-top:10px;display:none">
+        <label>上传图片（透明底 PNG）</label>
+        <input type="file" id="filePick" accept="image/*">
+        <div class="hint" id="fileInfo">未选择，使用文字 DEMO</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">2 · 位置与大小</div>
+      <div class="field"><label>大小</label>
+        <div class="range"><input type="range" id="rSize" min="20" max="160" value="100"><output id="oSize">100%</output></div></div>
+      <div class="field"><label>左右</label>
+        <div class="range"><input type="range" id="rX" min="-60" max="60" value="0"><output id="oX">0</output></div></div>
+      <div class="field"><label>高低</label>
+        <div class="range"><input type="range" id="rY" min="-40" max="60" value="0"><output id="oY">0</output></div></div>
+      <div class="field"><label>旋转</label>
+        <div class="range"><input type="range" id="rRot" min="-30" max="30" value="0"><output id="oRot">0°</output></div></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">3 · 衣服颜色</div>
+      <input type="color" id="cShirt" value="#ffffff" class="colorpick">
+      <div class="hint" style="margin-top:8px">印花颜色：<input type="color" id="cInk" value="#1a1a1a" class="colorpick" style="width:100%;height:30px"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">4 · 输出</div>
+      <div class="row">
+        <button class="btn primary" id="btnShot" type="button">导出当前视角图</button>
+      </div>
+      <div class="hint" style="margin-top:10px">操作：左键拖动旋转，滚轮缩放，右键平移。印花可直接拖到胸前。</div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="view"></canvas>
+    <div class="tip">左键旋转 · 滚轮缩放 · 拖动印花移动</div>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const cv = document.getElementById('view');
+const stage = document.querySelector('.stage');
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xe9e6e1);
+
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 50);
+camera.position.set(0, 0.55, 2.4);
+
+const controls = new OrbitControls(camera, cv);
+controls.target.set(0, 0.5, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 1.2;
+controls.maxDistance = 4.5;
+controls.maxPolarAngle = Math.PI * 0.75;
+
+// lights
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const key = new THREE.DirectionalLight(0xfff2e0, 1.6);
+key.position.set(1.5, 2.2, 1.8);
+key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+key.shadow.camera.left = -1.5; key.shadow.camera.right = 1.5;
+key.shadow.camera.top = 2; key.shadow.camera.bottom = -1;
+scene.add(key);
+const rim = new THREE.DirectionalLight(0xdfe8ff, 0.5);
+rim.position.set(-1.8, 1.2, -1.5);
+scene.add(rim);
+
+// fabric bump texture (procedural)
+function fabricBump(){
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#808080'; g.fillRect(0,0,256,256);
+  for (let i = 0; i < 9000; i++){
+    const v = 110 + Math.random()*40 | 0;
+    g.fillStyle = `rgb(${v},${v},${v})`;
+    g.fillRect(Math.random()*256, Math.random()*256, 1.2, 1.2);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(6, 8);
+  return t;
+}
+
+// ---- T-shirt on dress form (lathe torso + sleeves + collar) ----
+const shirtMat = new THREE.MeshStandardMaterial({
+  color: 0xffffff, roughness: 0.92, metalness: 0.0,
+  bumpMap: fabricBump(), bumpScale: 0.015
+});
+const formMat = new THREE.MeshStandardMaterial({ color: 0xb9b4ac, roughness: 0.95 });
+
+// torso profile: (radius, height)
+const prof = [
+  [0.30, 0.00], [0.28, 0.06], [0.265, 0.22], [0.30, 0.42],
+  [0.335, 0.62], [0.345, 0.82], [0.30, 0.96], [0.15, 1.02]
+];
+const pts = prof.map(p => new THREE.Vector2(p[0], p[1]));
+const torsoGeo = new THREE.LatheGeometry(pts, 56);
+const shirt = new THREE.Mesh(torsoGeo, shirtMat);
+shirt.scale.z = 0.86;   // 略扁，更像衣身
+shirt.castShadow = true;
+scene.add(shirt);
+
+// sleeves
+function sleeve(side){
+  const g = new THREE.CylinderGeometry(0.085, 0.06, 0.26, 24);
+  const m = new THREE.Mesh(g, shirtMat);
+  m.castShadow = true;
+  const dir = new THREE.Vector3(side * 0.55, -0.15, 0).normalize();
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0), dir);
+  m.position.set(side * 0.32, 0.86, 0);
+  scene.add(m);
+}
+sleeve(1); sleeve(-1);
+
+// collar
+const collar = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.018, 16, 40),
+  new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.9 }));
+collar.rotation.x = Math.PI/2;
+collar.position.y = 1.02;
+scene.add(collar);
+
+// dress-form lower stand (gray)
+const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.16, 0.2, 32), formMat);
+stand.position.y = -0.1;
+stand.castShadow = true;
+scene.add(stand);
+
+// ground shadow catcher
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(8, 8),
+  new THREE.ShadowMaterial({ opacity: 0.22 }));
+ground.rotation.x = -Math.PI/2;
+ground.position.y = -0.2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ---- print decal on chest ----
+const printGroup = new THREE.Group();
+scene.add(printGroup);
+const chestR = 0.335 * 0.86;   // 胸前 z 表面
+const printMat = new THREE.MeshStandardMaterial({
+  transparent: true, roughness: 0.9, depthWrite: false
+});
+const printMesh = new THREE.Mesh(new THREE.PlaneGeometry(1,1), printMat);
+printMesh.position.set(0, 0.62, chestR + 0.008);
+printGroup.add(printMesh);
+
+const state = { mode:'text', text:'DEMO', img:null, size:100, px:0, py:0, rot:0, ink:'#1a1a1a' };
+
+function drawPrint(){
+  const c = document.createElement('canvas');
+  c.width = c.height = 512;
+  const g = c.getContext('2d');
+  g.clearRect(0,0,512,512);
+  if (state.mode === 'img' && state.img){
+    const iw = state.img.width, ih = state.img.height;
+    const sc = Math.min(460/iw, 460/ih);
+    g.drawImage(state.img, (512-iw*sc)/2, (512-ih*sc)/2, iw*sc, ih*sc);
+  } else {
+    g.fillStyle = state.ink;
+    g.font = '700 150px "Arial Black", sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(state.text || ' ', 256, 256);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  printMat.map = t;
+  printMat.needsUpdate = true;
+  applyPrint();
+}
+function applyPrint(){
+  const s = 0.42 * (state.size/100);
+  const iw = state.mode === 'img' && state.img ? state.img.width : 1;
+  const ih = state.mode === 'img' && state.img ? state.img.height : 1;
+  const ar = iw / ih;
+  if (ar >= 1){ printMesh.scale.set(s, s/ar, 1); } else { printMesh.scale.set(s*ar, s, 1); }
+  printGroup.position.set(state.px/100*0.5, state.py/100*0.5, 0);
+  printMesh.rotation.z = state.rot * Math.PI/180;
+}
+
+// ---- UI ----
+const $ = id => document.getElementById(id);
+function bindRange(id, out, key){
+  $(id).addEventListener('input', e => {
+    state[key] = parseFloat(e.target.value);
+    $(out).textContent = e.target.value;
+    applyPrint();
+  });
+}
+bindRange('rSize','oSize','size');
+bindRange('rX','oX','px');
+bindRange('rY','oY','py');
+bindRange('rRot','oRot','rot');
+
+$('textInput').addEventListener('input', e => { state.text = e.target.value; drawPrint(); });
+$('cInk').addEventListener('input', e => { state.ink = e.target.value; drawPrint(); });
+$('cShirt').addEventListener('input', e => { shirtMat.color.set(e.target.value); });
+$('tabText').addEventListener('click', () => { state.mode='text'; $('tabText').classList.add('on'); $('tabImg').classList.remove('on'); $('fieldText').style.display=''; $('fieldImg').style.display='none'; drawPrint(); });
+$('tabImg').addEventListener('click', () => { state.mode='img'; $('tabImg').classList.add('on'); $('tabText').classList.remove('on'); $('fieldText').style.display='none'; $('fieldImg').style.display=''; if(state.img) drawPrint(); });
+$('filePick').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  const im = new Image();
+  im.onload = () => { state.img = im; $('fileInfo').textContent = '已加载：'+f.name; drawPrint(); };
+  im.src = URL.createObjectURL(f);
+});
+$('btnShot').addEventListener('click', () => {
+  renderer.render(scene, camera);
+  const a = document.createElement('a');
+  a.download = 'tshirt-3d.png';
+  a.href = renderer.domElement.toDataURL('image/png');
+  a.click();
+});
+
+// drag print on chest
+const ray = new THREE.Raycaster();
+const ptr = new THREE.Vector2();
+let dragging = false;
+function setPtr(e){
+  const r = cv.getBoundingClientRect();
+  ptr.x = ((e.clientX-r.left)/r.width)*2-1;
+  ptr.y = -((e.clientY-r.top)/r.height)*2+1;
+}
+cv.addEventListener('pointerdown', e => {
+  setPtr(e); ray.setFromCamera(ptr, camera);
+  if (ray.intersectObject(printMesh).length){ dragging = true; controls.enabled = false; }
+});
+cv.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  setPtr(e); ray.setFromCamera(ptr, camera);
+  const hit = ray.intersectObject(printMesh);
+  if (!hit.length) return;
+  const p = hit[0].point;
+  state.px = Math.max(-60, Math.min(60, p.x*200));
+  state.py = Math.max(-40, Math.min(60, (p.y-0.62)*200));
+  $('rX').value = state.px; $('oX').textContent = state.px;
+  $('rY').value = state.py; $('oY').textContent = state.py;
+  applyPrint();
+});
+window.addEventListener('pointerup', () => { dragging = false; controls.enabled = true; });
+
+// resize
+function resize(){
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w/h; camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+drawPrint();
+
+function loop(){
+  requestAnimationFrame(loop);
+  controls.update();
+  renderer.render(scene, camera);
+}
+loop();
+</script>
+</body>
+</html>
