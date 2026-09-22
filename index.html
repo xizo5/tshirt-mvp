@@ -592,18 +592,7 @@
   cv.addEventListener("dblclick", function(){
     state.zoom = 1; state.panX = 0; state.panY = 0; applyView();
   });
-  cv.addEventListener("wheel", function(ev){
-    ev.preventDefault();
-    var r = cv.getBoundingClientRect();
-    var sx = ev.clientX - r.left, sy = ev.clientY - r.top;
-    var lx = (sx - state.panX) / state.zoom;
-    var ly = (sy - state.panY) / state.zoom;
-    var nz = Math.max(0.5, Math.min(6, state.zoom * (ev.deltaY < 0 ? 1.15 : 1/1.15)));
-    state.panX = sx - lx * nz;
-    state.panY = sy - ly * nz;
-    state.zoom = nz;
-    applyView();
-  }, { passive: false });
+
 
   /* ---------- 控件绑定 ---------- */
   function bindRange(id, key, suffix){
