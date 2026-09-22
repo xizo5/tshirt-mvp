@@ -113,22 +113,6 @@
           <label>衣服颜色</label>
           <input type="color" id="cShirt" value="#ffffff">
         </div>
-        <div class="field tight">
-          <label>胸围 <span class="hint">（±15 cm）</span></label>
-          <div class="range"><input type="range" id="rChest" min="-15" max="15" value="0"><output id="oChest">0</output></div>
-        </div>
-        <div class="field">
-          <label>腰围 <span class="hint">（±15 cm）</span></label>
-          <div class="range"><input type="range" id="rWaist" min="-15" max="15" value="0"><output id="oWaist">0</output></div>
-        </div>
-        <div class="field">
-          <label>臀围 <span class="hint">（±15 cm）</span></label>
-          <div class="range"><input type="range" id="rHip" min="-15" max="15" value="0"><output id="oHip">0</output></div>
-        </div>
-        <div class="field">
-          <label>体重 <span class="hint">（±15 kg）</span></label>
-          <div class="range"><input type="range" id="rWeight" min="-15" max="15" value="0"><output id="oWeight">0</output></div>
-        </div>
       </section>
 
       <section>
@@ -183,14 +167,6 @@
         <div class="field">
           <label>大小</label>
           <div class="range"><input type="range" id="rScale" min="30" max="160" value="100"><output id="oScale">100%</output></div>
-        </div>
-        <div class="field">
-          <label>位置 · 左右</label>
-          <div class="range"><input type="range" id="rX" min="-100" max="100" value="0"><output id="oX">0</output></div>
-        </div>
-        <div class="field">
-          <label>位置 · 上下</label>
-          <div class="range"><input type="range" id="rY" min="-100" max="100" value="0"><output id="oY">0</output></div>
         </div>
         <div class="field">
           <label>旋转角度</label>
@@ -592,8 +568,8 @@
     var ny = (pt.y - H * chestY()) / (H * 0.3) * 100;
     state.posX = Math.max(-100, Math.min(100, nx));
     state.posY = Math.max(-100, Math.min(100, ny));
-    $("rX").value = state.posX; $("oX").textContent = state.posX;
-    $("rY").value = state.posY; $("oY").textContent = state.posY;
+    if($("rX")){ $("rX").value = state.posX; $("oX").textContent = state.posX; }
+    if($("rY")){ $("rY").value = state.posY; $("oY").textContent = state.posY; }
     render();
   });
   function endDrag(){ dragging = false; panning = false; cv.style.cursor = "default"; }
@@ -607,6 +583,7 @@
   /* ---------- 控件绑定 ---------- */
   function bindRange(id, key, suffix){
     var el = $(id), out = $(id.replace("r", "o"));
+    if(!el || !out) return;
     el.addEventListener("input", function(){
       state[key] = parseFloat(el.value);
       out.textContent = el.value + (suffix || "");
@@ -619,8 +596,9 @@
   bindRange("rRot", "rot", "°");
   bindRange("rOp", "opacity", "%");
   bindRange("rStr", "strength", "");
-  function bindBody(id, key){
+  function bindBody(id, key, suffix){
     var el = $(id), out = $(id.replace("r", "o"));
+    if(!el || !out) return;
     el.addEventListener("input", function(){
       state[key] = parseFloat(el.value);
       out.textContent = el.value;
@@ -713,17 +691,17 @@
     $("textInput").value = "DEMO"; $("fontSel").value = "'Arial Black',sans-serif";
     $("colorPick").value = "#141414";
     $("rScale").value = 100; $("oScale").textContent = "100%";
-    $("rX").value = 0; $("oX").textContent = "0";
-    $("rY").value = 0; $("oY").textContent = "0";
+    if($("rX")){ $("rX").value = 0; $("oX").textContent = "0"; }
+    if($("rY")){ $("rY").value = 0; $("oY").textContent = "0"; }
     $("rRot").value = 0; $("oRot").textContent = "0°";
     $("rOp").value = 100; $("oOp").textContent = "100%";
     $("rStr").value = 75; $("oStr").textContent = "75";
     $("cDye").checked = true;
     $("cRemoveBg").checked = true;
-    $("rChest").value = 0; $("oChest").textContent = "0";
-    $("rWaist").value = 0; $("oWaist").textContent = "0";
-    $("rHip").value = 0; $("oHip").textContent = "0";
-    $("rWeight").value = 0; $("oWeight").textContent = "0";
+    if($("rChest")){ $("rChest").value = 0; $("oChest").textContent = "0"; }
+    if($("rWaist")){ $("rWaist").value = 0; $("oWaist").textContent = "0"; }
+    if($("rHip")){ $("rHip").value = 0; $("oHip").textContent = "0"; }
+    if($("rWeight")){ $("rWeight").value = 0; $("oWeight").textContent = "0"; }
     setModel("male"); setView("front"); $("cShirt").value = "#ffffff"; state.zoom = 1; state.panX = 0; state.panY = 0; applyView();
     $("filePick").value = ""; $("fileInfo").textContent = "未选择图片，将使用文字 DEMO";
     setMode("text");
